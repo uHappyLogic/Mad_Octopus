@@ -64,7 +64,6 @@ class Agent:
     # return minimal between snake and target
     def get_reward(self, simple_state):
         dists = []
-        print(simple_state)
         for i in range(len(simple_state)):
             dists.append(
                 math.hypot(self.__terget_point[0] - simple_state[i][0], self.__terget_point[1] - simple_state[i][1]))
@@ -110,6 +109,7 @@ class Agent:
         simple_state = []
         l_state = list(state)
 
+        #average points
         for i in range(2, 42, 4):
             x = (l_state[i] + l_state[i + 40]) / 2
             y = (l_state[i + 1] + l_state[i + 41]) / 2
@@ -117,6 +117,8 @@ class Agent:
             v_y = (l_state[i + 3] + l_state[i + 43]) / 2
             state_part = [x, y, v_x, v_y]
             simple_state.append(state_part)
+        #start_angle_and_velocity
+        simple_state.append([l_state[0],l_state[1]])
         return simple_state
 
     def log_state(self, state):
