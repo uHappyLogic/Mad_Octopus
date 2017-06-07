@@ -43,14 +43,28 @@ class Agent:
 
     def __curlAction(self):
         for i in range(self.__actionDim):
-
-            if i % 3 == 1:
-                if self.counter % 100 < 50:
+            if self.counter % 100 < 50:
+                if i % 3 == 0:
                     self.__action[i] = 1
-                else:
+                if i % 3 == 2:
+                    self.__action[i] = 0
+                if i % 3 == 1:
                     self.__action[i] = 0
             else:
-                self.__action[i] = 1
+                if i % 3 == 0:
+                    self.__action[i] = 0
+                if i % 3 == 2:
+                    self.__action[i] = 1
+                if i % 3 == 1:
+                    self.__action[i] = 0
+
+            # if i % 3 == 1:
+            #     if self.counter % 100 < 50:
+            #         self.__action[i] = 1
+            #     else:
+            #         self.__action[i] = 0
+            # else:
+            #     self.__action[i] = 1
 
             #if i % 3 == 2:
             #    self.__action[i] = 0
@@ -106,6 +120,7 @@ class Agent:
 
     def step(self, reward, state):
         print('step {0}'.format(self.step_id))
+        print(reward)
         self.step_id += 1
 
         self.log_reward(reward)
