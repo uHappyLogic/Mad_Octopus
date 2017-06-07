@@ -56,8 +56,6 @@ class Agent:
                 if i % 3 == 1:
                     self.__action[i] = 0
 
-    def minus_vector(self, vec1, vec2):
-        return [vec1[0] - vec2[0], vec1[1] - vec2[1]]
 
     # return minimal between snake and target
     def get_reward(self, simple_state):
