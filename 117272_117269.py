@@ -22,7 +22,7 @@ class Agent:
         # agentParams could be a parameter file needed by the agent.
         random.seed()
         self.step_id = 0
-        self.run_log_filename = '/home/uhappylogic/Workspace/misio-labs/octopus_arm/runlogs/run_log_1'
+        self.run_log_filename = './runlogs/run_log_1'
         self.run_log_file = open(self.run_log_filename, "w+")
 
         self.last_step_log_line = []

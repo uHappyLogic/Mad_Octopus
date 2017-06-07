@@ -3,6 +3,7 @@ README.txt
 *.log
 .idea
 runlogs
+agent_handler.py
 
 __pycache__/
 *.py[cod]
