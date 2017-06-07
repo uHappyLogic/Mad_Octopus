@@ -20,7 +20,8 @@ RESDIR=results/${AGENT}
 mkdir -p $RESDIR 2>/dev/null
 rm *.log $RESDIR/*.log 2>/dev/null
 cp $AGENTFILE agent/python/Agent.py
-cp ./misio_agent/logger.py agent/python/logger.py
+cp ./misio_agent/Logger.py agent/python/Logger.py
+cp ./misio_agent/Model.py agent/python/Model.py
 
 # Kill all servers that might have not been closed properly earlier
 kill `ps|grep environment/octopus-environment.jar|cut -d' ' -f1|xargs` 2>/dev/null

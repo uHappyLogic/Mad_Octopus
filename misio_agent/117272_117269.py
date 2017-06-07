@@ -2,7 +2,8 @@ import random
 from array import array
 import numpy as np
 import math
-from logger import Logger
+from Logger import Logger
+from Model import Model
 
 
 class Agent:
