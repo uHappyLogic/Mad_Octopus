@@ -1,5 +1,7 @@
 import random
 from array import array
+import numpy as np
+import math
 
 
 class Agent:
@@ -24,6 +26,16 @@ class Agent:
         self.run_log_file = open(self.run_log_filename, "w+")
 
         self.last_step_log_line = []
+        self.counter = 0
+
+        self.neural_output_translator = {
+              0: [i for i in range(15) if i % 3 == 0]
+            , 1: [i for i in range(15) if i % 3 == 1]
+            , 2: [i for i in range(15) if i % 3 == 2]
+            , 3: [i for i in range(15, 30) if i % 3 == 0]
+            , 4: [i for i in range(15, 30) if i % 3 == 1]
+            , 5: [i for i in range(15, 30) if i % 3 == 2]
+        }
 
     def __randomAction(self):
         for i in range(self.__actionDim):
@@ -31,10 +43,57 @@ class Agent:
 
     def __curlAction(self):
         for i in range(self.__actionDim):
-            if i % 3 == 2:
-                self.__action[i] = 1
+
+            if i % 3 == 1:
+                if self.counter % 100 < 50:
+                    self.__action[i] = 1
+                else:
+                    self.__action[i] = 0
             else:
-                self.__action[i] = 0
+                self.__action[i] = 1
+
+            #if i % 3 == 2:
+            #    self.__action[i] = 0
+            #else:
+            #    self.__action[i] = 1
+
+    def minus_vector(self, vec1, vec2):
+        return [vec1[0] - vec2[0], vec1[1] - vec2[1]]
+
+
+    # return minimal between snake and target
+    def get_reward(self, simple_state):
+        dists = []
+        p3 = [9, 4]
+
+        for i in range(0, len(simple_state) - 4, 4):
+            p2p1 = self.minus_vector(simple_state[i + 4], simple_state[i])
+            p1p3 = self.minus_vector(simple_state[i], p3)
+
+            dists.append(
+                np.linalg.norm(np.cross(p2p1, p1p3)) / np.linalg.norm(p2p1)
+            )
+
+        return np.min(dists)
+
+
+    def __str__(self) -> str:
+        return super().__str__()
+
+    # if i % 3 == 0 or i % 3 == 2:
+    #    self.__action[i] = 1
+    # else:
+    #    self.__action[i] = 1
+
+    def unwind_action(self, neural_output):
+
+        result = np.zeros(30)
+
+        for i in range(len(neural_output)):
+            for k in self.neural_output_translator[i]:
+                result[k] = neural_output[i]
+
+        return result
 
     def start(self, state):
         print('agent started')
@@ -50,13 +109,37 @@ class Agent:
         self.step_id += 1
 
         self.log_reward(reward)
-
+        self.counter += 1
         "Given current reward and state, agent returns next action"
-        self.__randomAction()
+        self.__curlAction()
 
         self.log_state(state)
 
         return self.__action
+
+    def get_simple_state(self, state):
+
+        simple_state = []
+        l_state = list(state)
+
+        # first coords
+        simple_state.append((l_state[2] + l_state[42]) / 2)
+        simple_state.append((l_state[3] + l_state[43]) / 2)
+
+        # first velocity
+        simple_state.append((l_state[4] + l_state[44]) / 2)
+        simple_state.append((l_state[5] + l_state[45]) / 2)
+
+        for i in range(36):
+            if i % 8 == 0:
+                # coords coordinates
+                simple_state.append((l_state[i + 6] + l_state[i + 46]) / 2)
+                simple_state.append((l_state[i + 7] + l_state[i + 47]) / 2)
+                # velocities coordinates
+                simple_state.append((l_state[i + 8] + l_state[i + 48]) / 2)
+                simple_state.append((l_state[i + 9] + l_state[i + 49]) / 2)
+
+        return simple_state
 
     def log_state(self, state):
         l_state = list(state)

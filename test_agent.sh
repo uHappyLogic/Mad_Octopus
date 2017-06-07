@@ -36,7 +36,7 @@ for instance in $TESTDIR/*.xml; do
     printf "%-12s" "$test "
 
     # Run the server
-    java -Djava.endorsed.dirs=environment/lib -jar environment/octopus-environment.jar external $instance $PORT &
+    java -Djava.endorsed.dirs=environment/lib -jar environment/octopus-environment.jar external_gui $instance $PORT &
     server_pid=$!
     printf $server_pid    	
 
