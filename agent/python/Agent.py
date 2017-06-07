@@ -2,6 +2,7 @@ import random
 from array import array
 import numpy as np
 import math
+from logger import Logger
 
 
 class Agent:
@@ -13,7 +14,7 @@ class Agent:
         print('params {0}'.format(agentParams))
         print('state dim {0} actionDim {1}'.format(stateDim, actionDim))
         print("===========================================")
-
+        self.__logger = Logger()
         self.__terget_point = [9, -1]
         self.__stateDim = stateDim
         self.__actionDim = actionDim
@@ -22,10 +23,6 @@ class Agent:
         # agentParams could be a parameter file needed by the agent.
         random.seed()
         self.step_id = 0
-        self.run_log_filename = './runlogs/run_log_1'
-        self.run_log_file = open(self.run_log_filename, "w+")
-
-        self.last_step_log_line = []
         self.counter = 0
 
         self.neural_output_translator = {
@@ -86,8 +83,7 @@ class Agent:
         print('agent started')
         "Given starting state, agent returns first action"
         self.__randomAction()
-
-        self.log_state(state)
+        self.__logger.log_state(state)
 
         return self.__action
 
@@ -96,7 +92,7 @@ class Agent:
         print(self.get_reward(self.get_simple_state(state)))
         self.step_id += 1
 
-        self.log_reward(reward)
+        self.__logger.log_reward(reward, self.step_id)
         self.counter += 1
         "Given current reward and state, agent returns next action"
         self.__curlAction()
@@ -109,7 +105,7 @@ class Agent:
         simple_state = []
         l_state = list(state)
 
-        #average points
+        # average points
         for i in range(2, 42, 4):
             x = (l_state[i] + l_state[i + 40]) / 2
             y = (l_state[i + 1] + l_state[i + 41]) / 2
@@ -117,51 +113,15 @@ class Agent:
             v_y = (l_state[i + 3] + l_state[i + 43]) / 2
             state_part = [x, y, v_x, v_y]
             simple_state.append(state_part)
-        #start_angle_and_velocity
-        simple_state.append([l_state[0],l_state[1]])
+        # start_angle_and_velocity
+        simple_state.append([l_state[0], l_state[1]])
         return simple_state
-
-    def log_state(self, state):
-        l_state = list(state)
-
-        pos = []
-        vel = []
-
-        # position
-        pos.append((l_state[2] + l_state[42]) / 2)
-        pos.append((l_state[3] + l_state[43]) / 2)
-
-        for i in range(36):
-            if i % 8 == 0:
-                pos.append((l_state[i + 6] + l_state[i + 46]) / 2)
-                pos.append((l_state[i + 7] + l_state[i + 47]) / 2)
-
-        vel.append((l_state[4] + l_state[44]) / 2)
-        vel.append((l_state[5] + l_state[45]) / 2)
-
-        for i in range(36):
-            if i % 8 == 0:
-                vel.append((l_state[i + 8] + l_state[i + 48]) / 2)
-                vel.append((l_state[i + 9] + l_state[i + 49]) / 2)
-
-        state_rep = ','.join(['{: 3.2f}'.format(el) for el in pos]) + '\n'
-        state_rep += ','.join(['{: 3.2f}'.format(el) for el in vel]) + '\n'
-
-        # self.last_step_log_line = ["%.2f" % round(el, 2) for el in self.__action]
-        # self.last_step_log_line = ["%.2f" % el for el in state]
-
-        self.last_step_log_line = [state_rep]
-
-    def log_reward(self, reward):
-        self.last_step_log_line.append(reward)
-
-        self.run_log_file.write(','.join(map(str, self.last_step_log_line)) + ('\n--{0}-\n'.format(self.step_id)))
 
     def end(self, reward):
 
-        self.log_reward(reward)
+        self.__logger.log_reward(reward, self.step_id)
 
-        self.run_log_file.close()
+        self.__logger.close()
 
     def cleanup(self):
         pass
