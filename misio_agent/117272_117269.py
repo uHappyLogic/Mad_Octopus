@@ -20,8 +20,7 @@ class Agent:
         self.__stateDim = stateDim
         self.__actionDim = actionDim
         self.__action = array('d', [0 for x in range(actionDim)])
-        # we ignore agentParams because our agent does not need it.
-        # agentParams could be a parameter file needed by the agent.
+
         random.seed()
         self.step_id = 0
         self.counter = 0
@@ -34,6 +33,8 @@ class Agent:
             , 4: [i for i in range(15, 30) if i % 3 == 1]
             , 5: [i for i in range(15, 30) if i % 3 == 2]
         }
+
+        self.model = Model()
 
     def __randomAction(self):
         for i in range(self.__actionDim):
@@ -55,9 +56,6 @@ class Agent:
                     self.__action[i] = 1
                 if i % 3 == 1:
                     self.__action[i] = 0
-
-    def minus_vector(self, vec1, vec2):
-        return [vec1[0] - vec2[0], vec1[1] - vec2[1]]
 
     # return minimal between snake and target
     def get_reward(self, simple_state):
