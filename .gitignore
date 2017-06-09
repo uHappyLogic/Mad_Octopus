@@ -4,6 +4,7 @@ README.txt
 .idea
 runlogs
 agent_handler.py
+agent
 
 __pycache__/
 *.py[cod]
