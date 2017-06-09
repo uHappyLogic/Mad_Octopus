@@ -97,6 +97,7 @@ class ExperienceReplay(object):
             inputs[i:i+1] = state_t
             # There should be no target values for actions not taken.
             # Thou shalt not correct actions not taken #deep
+            pred = model.predict(state_t)
             targets[i] = model.predict(state_t)[0]
             Q_sa = np.max(model.predict(state_tp1)[0])
             if game_over:  # if game_over is True
