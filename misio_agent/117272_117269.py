@@ -34,7 +34,7 @@ class Agent:
             , 5: [i for i in range(15, 30) if i % 3 == 2]
         }
 
-        self.model = Model()
+        self.model = Model(0.5, 6, 42, 10)
 
     def __randomAction(self):
         for i in range(self.__actionDim):
