@@ -2,6 +2,9 @@ import random
 from array import array
 import numpy as np
 import math
+
+from pytools import flatten
+
 from Logger import Logger
 from Model import Model
 
@@ -15,11 +18,12 @@ class Agent:
         print('params {0}'.format(agentParams))
         print('state dim {0} actionDim {1}'.format(stateDim, actionDim))
         print("===========================================")
-        self.__logger = Logger()
+        # self.__logger = Logger()
         self.__terget_point = [9, -1]
         self.__stateDim = stateDim
         self.__actionDim = actionDim
         self.__action = array('d', [0 for x in range(actionDim)])
+        self.batch_size = 50
 
         random.seed()
         self.step_id = 0
@@ -34,7 +38,9 @@ class Agent:
             , 5: [i for i in range(15, 30) if i % 3 == 2]
         }
 
-        self.model = Model(0.5, 6, 42, 10)
+        self.model = Model(0.5, len(self.neural_output_translator), 42, 10)
+
+        self.state_before_move = []
 
     def __randomAction(self):
         for i in range(self.__actionDim):
@@ -65,9 +71,6 @@ class Agent:
                 math.hypot(self.__terget_point[0] - simple_state[i][0], self.__terget_point[1] - simple_state[i][1]))
         return np.min(dists)
 
-    def __str__(self) -> str:
-        return super().__str__()
-
     def unwind_action(self, neural_output):
 
         result = np.zeros(30)
@@ -82,30 +85,46 @@ class Agent:
         print('agent started')
         "Given starting state, agent returns first action"
         self.__randomAction()
-        self.__logger.log_state(state)
+        # self.__logger.log_state(state)
+
+        self.state_before_move = self.get_flat_simple_state(list(state))
+
+        print(self.state_before_move)
 
         return self.__action
 
     def step(self, reward, state):
-        print('step {0}'.format(self.step_id))
-        print(self.get_reward(self.get_simple_state(state)))
-        self.step_id += 1
+        state_list = list(state)
+        if self.counter % self.batch_size == 1:
+            inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size)
+            print('====================================\n{0}\n====================================\n{1}\n===================================='
+                  .format(inputs, targets))
 
-        self.__logger.log_reward(reward, self.step_id)
-        self.counter += 1
-        "Given current reward and state, agent returns next action"
+        enhanced_reward = 30 - (self.get_reward(self.get_simple_state(state_list)) + reward)
+
+        self.step_id += 1
+        # self.__logger.log_reward(enhanced_reward, self.step_id)
+        print(enhanced_reward)
+
+        after_state = self.get_flat_simple_state(state_list)
+        self.model.remember(self.state_before_move, self.__action, enhanced_reward, after_state, False)
+
+        self.state_before_move = after_state
         self.__curlAction()
 
-        # self.log_state(state)
+        self.counter += 1
 
         return self.__action
 
+    def get_flat_simple_state(self, state):
+        return list(flatten(self.get_simple_state(state)))
+
     def get_simple_state(self, state):
         simple_state = []
-        l_state = list(state)
-
+        l_state = state
         # average points
         for i in range(2, 42, 4):
+            print(i)
             x = (l_state[i] + l_state[i + 40]) / 2
             y = (l_state[i + 1] + l_state[i + 41]) / 2
             v_x = (l_state[i + 2] + l_state[i + 42]) / 2
@@ -117,10 +136,9 @@ class Agent:
         return simple_state
 
     def end(self, reward):
-
-        self.__logger.log_reward(reward, self.step_id)
-
-        self.__logger.close()
+        pass
+        # self.__logger.log_reward(reward, self.step_id)
+        # self.__logger.close()
 
     def cleanup(self):
         pass

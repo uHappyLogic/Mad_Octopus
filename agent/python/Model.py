@@ -6,10 +6,12 @@ from keras.optimizers import sgd
 
 
 class ExperienceReplay(object):
-    def __init__(self, max_memory=100, discount=.9):
+    def __init__(self, action_count, state_count, max_memory=100, discount=.9):
         self.max_memory = max_memory
         self.memory = list()
         self.discount = discount
+        self.action_count = action_count
+        self.state_count = state_count
 
     def remember(self, states, game_over):
         # memory[i] = [[state_t, action_t, reward_t, state_t+1], game_over?]
@@ -19,12 +21,15 @@ class ExperienceReplay(object):
 
     def get_batch(self, model, batch_size=10):
         len_memory = len(self.memory)
-        num_actions = model.output_shape[-1]
-        env_dim = self.memory[0][0][0].shape[1]
+        env_dim = self.state_count
         inputs = np.zeros((min(len_memory, batch_size), env_dim))
-        targets = np.zeros((inputs.shape[0], num_actions))
-        for i, idx in enumerate(np.random.randint(0, len_memory, size=inputs.shape[0])):
+        targets = np.zeros((inputs.shape[0], self.action_count))
+        print(targets)
+        for i, idx in enumerate(np.random.randint(0, len_memory, size=[2])):
+            print('iterator: {0}'.format(i))
+            print('idx: {0}'.format(idx))
             state_t, action_t, reward_t, state_tp1 = self.memory[idx][0]
+            print("action_t: {0}".format(action_t))
             game_over = self.memory[idx][1]
 
             inputs[i:i+1] = state_t
@@ -39,26 +44,22 @@ class ExperienceReplay(object):
 
 
 class Model:
-    def __init__(self, gamma, actions_number, states_number, hidden_nodes_number):
+    def __init__(self, gamma, actions_count, states_count, hidden_nodes_count):
         self.gamma = gamma
-        self.states_number = states_number
-        self.actions_number = actions_number
-        self.hidden_nodes_number = hidden_nodes_number
+        self.states_count = states_count
+        self.actions_count = actions_count
+        self.hidden_nodes_number = hidden_nodes_count
 
         self.states = 1
 
-        hidden_size = 100
-
-        model = Sequential()
-        model.add(Dense(hidden_size, input_shape=(self.states_number,), activation='relu'))
-        model.add(Dense(hidden_size, activation='relu'))
-        model.add(Dense(self.actions_number, activation='sigmoid'))
-        model.compile(sgd(lr=.2), "mse")
+        self.model = Sequential()
+        self.model.add(Dense(self.hidden_nodes_number, input_shape=(self.states_count, ), activation='relu'))
+        self.model.add(Dense(self.hidden_nodes_number, activation='relu'))
+        self.model.add(Dense(self.actions_count, activation='sigmoid'))
+        self.model.compile(sgd(lr=.2), "mse")
         max_memory = 10
 
-        self.exp_replay = ExperienceReplay(max_memory=max_memory)
+        self.exp_replay = ExperienceReplay(self.actions_count, self.states_count, max_memory=max_memory, discount=0.9)
 
-    def remember(self, input_tm1, action, reward, input_t, game_over):
-        self.exp_replay.remember([input_tm1, action, reward, input_t], game_over)
-
-
+    def remember(self, state_before_move, action, reward, state_after_move, game_over):
+        self.exp_replay.remember([np.array([state_before_move]), action, reward, np.array([state_after_move])], game_over)
