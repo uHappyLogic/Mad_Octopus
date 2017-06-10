@@ -24,7 +24,8 @@ cp ./misio_agent/Logger.py agent/python/Logger.py
 cp ./misio_agent/Model.py agent/python/Model.py
 
 # Kill all servers that might have not been closed properly earlier
-kill `ps|grep environment/octopus-environment.jar|cut -d' ' -f1|xargs` 2>/dev/null
+kill `ps -x |grep environment/octopus-environment.jar|head -n1 |cut -d " " -f1`
+#kill `ps|grep environment/octopus-environment.jar|cut -d' ' -f1|xargs` 2>/dev/null
 sleep 1
 
 # Mean of each line (sum for each value in line)
@@ -44,7 +45,7 @@ do
         server_pid=$!
         printf $server_pid
 
-        printf "server running\n"
+        #printf "server running\n"
 
         # run the agent
         pushd agent/python >/dev/null
@@ -57,14 +58,14 @@ do
         done
         popd >/dev/null
         sleep $SLEEP_TIME # Waste of time
-        printf "killing server\n"
+        #printf "killing server\n"
         # Kill the server
         kill $server_pid
         sleep $SLEEP_TIME # Waste of time, but I need to wait for OS to reclaim the port
 
         # Move the results to results/agent/*.log and print the sum of rewards
         logfile=`ls *.log`
-        printf "%6.2f\n" `cat "$logfile" | meansum`
+        #printf "%6.2f\n" `cat "$logfile" | meansum`
         mv $logfile $RESDIR/${test}.log
     done
 done

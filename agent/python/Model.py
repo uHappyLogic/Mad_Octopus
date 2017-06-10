@@ -2,6 +2,7 @@ import numpy as np
 from keras.layers.core import Dense
 from keras.models import Sequential
 from keras.optimizers import sgd
+import keras.backend as kerasBackend
 
 
 class ExperienceReplay(object):
@@ -17,7 +18,7 @@ class ExperienceReplay(object):
         if len(self.memory) > self.max_memory:
             del self.memory[0]
 
-    def get_batch(self, model, batch_size):
+    def get_batch(self, model, batch_size, final_reward):
         len_memory = len(self.memory)
         env_dim = self.state_count
 
@@ -25,10 +26,10 @@ class ExperienceReplay(object):
 
         inputs = np.zeros((poll_size, env_dim))
         targets = np.zeros((inputs.shape[0], self.action_count))
-
         for i, idx in enumerate(np.random.randint(0, len_memory, size=poll_size)):
             state_t, action_t, reward_t, state_tp1 = self.memory[idx][0]
-            inputs[i:i+1] = state_t
+            reward_t = final_reward + reward_t
+            inputs[i:i + 1] = state_t
             targets[i] = model.predict(state_t)[0]
 
             Q_sa = np.max(model.predict(state_tp1)[0])
@@ -47,7 +48,7 @@ class Model:
         self.states = 1
 
         self.model = Sequential()
-        self.model.add(Dense(self.hidden_nodes_number, input_shape=(self.states_count, ), activation='relu'))
+        self.model.add(Dense(self.hidden_nodes_number, input_shape=(self.states_count,), activation='relu'))
         self.model.add(Dense(self.hidden_nodes_number, activation='relu'))
         self.model.add(Dense(self.actions_count, activation='sigmoid'))
         self.model.compile(sgd(lr=.3), "mse")
@@ -57,3 +58,6 @@ class Model:
 
     def remember(self, state_before_move, action, reward, state_after_move):
         self.exp_replay.remember([np.array([state_before_move]), action, reward, np.array([state_after_move])])
+
+    def clear_session(self):
+        kerasBackend.clear_session()
