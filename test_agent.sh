@@ -35,41 +35,38 @@ meansum()
     python3 -c "import sys; from numpy import mean; print(mean([sum(float(r) for r in line.split()) for line in sys.stdin]))"
 }
 
-while :
-do
-    for instance in $TESTDIR/*.xml; do
-        test=`basename ${instance%.*}`
-        printf "%-12s" "$test "
+for instance in $TESTDIR/*.xml; do
+    test=`basename ${instance%.*}`
+    printf "%-12s" "$test "
 
-        # Run the server
-        java -Djava.endorsed.dirs=environment/lib -jar environment/octopus-environment.jar $3 $instance $PORT &
-        server_pid=$!
-        printf $server_pid
+    # Run the server
+    java -Djava.endorsed.dirs=environment/lib -jar environment/octopus-environment.jar $3 $instance $PORT &
+    server_pid=$!
+    printf $server_pid
 
-        #printf "server running\n"
+    #printf "server running\n"
 
-        # run the agent
-        pushd agent/python >/dev/null
-        exit_status=1
-        while true; do
-            $PYTHON agent_handler.py localhost $PORT 1
-            if [ $? -eq 0 ]; then break; fi
-            sleep $SLEEP_TIME # I need some time here to let the port be created
-            printf "sleeping time\n"
-        done
-        popd >/dev/null
-        sleep $SLEEP_TIME # Waste of time
-        #printf "killing server\n"
-        # Kill the server
-        #kill $server_pid
-        kill `ps -x |grep environment/octopus-environment.jar|head -n1 |awk '{print $1}'`
-        sleep $SLEEP_TIME # Waste of time, but I need to wait for OS to reclaim the port
-
-        # Move the results to results/agent/*.log and print the sum of rewards
-        logfile=`ls *.log`
-        #printf "%6.2f\n" `cat "$logfile" | meansum`
-        mv $logfile $RESDIR/${test}.log
+    # run the agent
+    pushd agent/python >/dev/null
+    exit_status=1
+    while true; do
+        $PYTHON agent_handler.py localhost $PORT 1
+        if [ $? -eq 0 ]; then break; fi
+        sleep $SLEEP_TIME # I need some time here to let the port be created
+        printf "sleeping time\n"
     done
+    popd >/dev/null
+    sleep $SLEEP_TIME # Waste of time
+    #printf "killing server\n"
+    # Kill the server
+    #kill $server_pid
+    kill `ps -x |grep environment/octopus-environment.jar|head -n1 |awk '{print $1}'`
+    sleep $SLEEP_TIME # Waste of time, but I need to wait for OS to reclaim the port
+
+    # Move the results to results/agent/*.log and print the sum of rewards
+    logfile=`ls *.log`
+    #printf "%6.2f\n" `cat "$logfile" | meansum`
+    mv $logfile $RESDIR/${test}.log
 done
 
 # Average reward over all tests

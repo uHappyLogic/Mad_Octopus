@@ -28,12 +28,6 @@ class ExperienceReplay(object):
         targets = np.zeros((inputs.shape[0], self.action_count))
         for i, idx in enumerate(np.random.randint(0, len_memory, size=poll_size)):
             state_t, action_t, reward_t, state_tp1 = self.memory[idx][0]
-<<<<<<< HEAD
-=======
-            reward_t = final_reward
-            #if final_reward>0:
-            #    reward_t = final_reward - ((final_reward/poll_size)*(poll_size - i))
->>>>>>> 6927ae820d52283cd69a4a4f1860597264365cb8
             inputs[i:i + 1] = state_t
             targets[i] = model.predict(state_t)[0]
             Q_sa = np.max(model.predict(state_tp1)[0])
@@ -52,18 +46,10 @@ class Model:
         self.states = 1
 
         self.model = Sequential()
-<<<<<<< HEAD
         self.model.add(Dense(self.hidden_nodes_number, input_shape=(self.states_count,), activation='relu'))
         self.model.add(Dense(self.actions_count, activation='sigmoid'))
         self.model.compile(sgd(lr=learning_rate), "mse")
         max_memory = 100
-=======
-        self.model.add(Dense(22, input_shape=(self.states_count,), activation='relu'))
-        self.model.add(Dense(132, input_shape=(self.states_count,), activation='relu'))
-        self.model.add(Dense(self.actions_count, activation='sigmoid'))
-        self.model.compile(sgd(lr=.3), "mse")
-        max_memory = 1000
->>>>>>> 6927ae820d52283cd69a4a4f1860597264365cb8
 
         self.exp_replay = ExperienceReplay(self.actions_count, self.states_count, max_memory=max_memory, discount=self.gamma)
 

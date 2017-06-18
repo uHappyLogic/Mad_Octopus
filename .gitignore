@@ -6,6 +6,10 @@ runlogs
 agent_handler.py
 agent
 
+left/*
+tests2/*
+upper_tests/*
+
 __pycache__/
 *.py[cod]
 *$py.class

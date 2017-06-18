@@ -24,6 +24,7 @@ class Agent:
         self.max_steps = 1000
         self.states_count = 42
         self.learning_enabled = False
+        self.dump_result_file = False
 
         self.neural_output_translator = {
             0: [i for i in range(15) if i % 3 == 0]
@@ -184,11 +185,11 @@ class Agent:
             inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size, self.last_reward)
             self.model.model.train_on_batch(inputs, targets)
 
-        print("final reward {0}".format(self.final_reward))
-        print("saving dump")
-        self.model.model.save_weights(self.model_dump_file_name, overwrite=True)
-        self.model.clear_session()
-        print("end")
+        if self.dump_result_file:
+            print("saving dump")
+            self.model.model.save_weights(self.model_dump_file_name, overwrite=True)
+            self.model.clear_session()
+            print("end")
 
     def getName(self):
         return self.__name
