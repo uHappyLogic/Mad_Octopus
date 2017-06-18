@@ -28,7 +28,6 @@ class ExperienceReplay(object):
         targets = np.zeros((inputs.shape[0], self.action_count))
         for i, idx in enumerate(np.random.randint(0, len_memory, size=poll_size)):
             state_t, action_t, reward_t, state_tp1 = self.memory[idx][0]
-            reward_t = final_reward + reward_t
             inputs[i:i + 1] = state_t
             targets[i] = model.predict(state_t)[0]
 
@@ -39,8 +38,8 @@ class ExperienceReplay(object):
 
 
 class Model:
-    def __init__(self, gamma, actions_count, states_count, hidden_nodes_count):
-        self.gamma = gamma
+    def __init__(self, learning_rate, actions_count, states_count, hidden_nodes_count):
+        self.gamma = learning_rate
         self.states_count = states_count
         self.actions_count = actions_count
         self.hidden_nodes_number = hidden_nodes_count
@@ -49,9 +48,8 @@ class Model:
 
         self.model = Sequential()
         self.model.add(Dense(self.hidden_nodes_number, input_shape=(self.states_count,), activation='relu'))
-        self.model.add(Dense(self.hidden_nodes_number, activation='relu'))
         self.model.add(Dense(self.actions_count, activation='sigmoid'))
-        self.model.compile(sgd(lr=.3), "mse")
+        self.model.compile(sgd(lr=learning_rate), "mse")
         max_memory = 100
 
         self.exp_replay = ExperienceReplay(self.actions_count, self.states_count, max_memory=max_memory, discount=0.9)

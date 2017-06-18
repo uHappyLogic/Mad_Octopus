@@ -1,11 +1,11 @@
 from array import array
 import numpy as np
 import math
-import json
 import os
 
 from pytools import flatten
 from Model import Model
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class Agent:
@@ -16,14 +16,14 @@ class Agent:
         self.__stateDim = stateDim
         self.__actionDim = actionDim
         self.__action = array('d', [0 for x in range(actionDim)])
-        self.batch_size = 5
-        self.hidden_nodes_count = 42
+        self.batch_size = 6
+        self.hidden_nodes_count = 124
         self.random_actions_count = 2
-        self.final_reward = 0.0
         self.step_id = 0
         self.counter = 0
         self.max_steps = 1000
         self.states_count = 42
+        self.learning_enabled = False
 
         self.neural_output_translator = {
             0: [i for i in range(15) if i % 3 == 0]
@@ -36,9 +36,10 @@ class Agent:
         self.part_actions_count = len(self.neural_output_translator)
         self.neural_action_count = int(math.pow(2, self.part_actions_count))
 
-        self.model = Model(0.5, self.neural_action_count, self.states_count, self.hidden_nodes_count)
+        self.model = Model(0.7, self.neural_action_count, self.states_count, self.hidden_nodes_count)
 
         self.model_dump_file_name = "model.h12"
+        self.result_file_name = "results.h12"
 
         if os.path.exists(self.model_dump_file_name):
             self.model.model.load_weights(self.model_dump_file_name)
@@ -46,6 +47,10 @@ class Agent:
             print("Model cannot be loaded")
 
         self.previous_state = []
+
+        self.last_dist = 0
+
+        self.last_reward = 0
 
     def __randomAction(self):
         idx = np.random.randint(0, self.neural_action_count)
@@ -88,12 +93,12 @@ class Agent:
                 best_id = i
                 break
 
-        #print("choosen action {0}".format(bests_neural_outputs[best_id][0]))
+        # print("choosen action {0}".format(bests_neural_outputs[best_id][0]))
         self.__set_action(bests_neural_outputs[best_id][0])
 
     def get_distance_from_target(self, simple_state):
         dists = []
-        for i in range(len(simple_state)):
+        for i in range(len(simple_state) - 4, len(simple_state)):
             dists.append(
                 math.hypot(self.__terget_point[0] - simple_state[i][0], self.__terget_point[1] - simple_state[i][1]))
         return np.min(dists)
@@ -109,30 +114,50 @@ class Agent:
         return result
 
     def start(self, state):
-        self.previous_state = self.get_flat_simple_state(list(state))
+        state_list = list(state)
+
+        self.previous_state = self.get_flat_simple_state(state_list)
         self.__neural_action(self.previous_state)
+
+        self.last_dist = self.get_distance_from_target(self.get_simple_state(state_list))
 
         return self.__action
 
-    def get_enhanced_reward(self, state_list):
-        return (-1 * self.get_distance_from_target(self.get_simple_state(state_list)))/10
+    def get_enhanced_reward(self, state_list, system_reward):
+        enc_rew = float(self.last_dist - self.get_distance_from_target(self.get_simple_state(state_list)))
+
+        if system_reward > 0:
+            enc_rew += system_reward
+
+        enc_rew /= float(10)
+
+        return enc_rew
 
     def step(self, reward, state):
-        #print("step idx {0}".format(self.step_id))
         state_list = list(state)
-        if (self.counter % self.batch_size == 0) and self.counter > 0:
-            inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size, self.final_reward)
+
+        if self.learning_enabled:
+            self.last_reward = self.get_enhanced_reward(state_list, reward)
+
+        # print('reward {0}'.format(self.last_reward))
+
+        if self.learning_enabled and (self.counter % self.batch_size == 0) and self.counter > 0:
+            inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size, self.last_reward)
             self.model.model.train_on_batch(inputs, targets)
-        enhanced_reward = self.get_enhanced_reward(state_list)
-        #print("enhanced_reward {0}".format(enhanced_reward))
-        self.step_id += 1
+
+            self.last_dist = self.get_distance_from_target(self.get_simple_state(state_list))
+
         current_state = self.get_flat_simple_state(state_list)
 
-        self.model.remember(self.previous_state, self.action_idx, enhanced_reward, current_state)
+        if self.learning_enabled:
+            self.model.remember(self.previous_state, self.action_idx, self.last_reward, current_state)
 
         self.previous_state = current_state
-        self.__neural_action(current_state)
-        #self.__good_action()
+
+        if self.step_id % 3 == 0:
+            self.__neural_action(current_state)
+
+        self.step_id += 1
         self.counter += 1
 
         return self.__action
@@ -159,16 +184,19 @@ class Agent:
         pass
 
     def cleanup(self):
-        self.final_reward = (self.max_steps - self.step_id)/100
-        self.model.remember(self.previous_state, self.action_idx, self.final_reward, self.previous_state)
-        inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size, self.final_reward)
-        self.model.model.train_on_batch(inputs, targets)
+        if self.learning_enabled:
+            print("learning enabled, saving dump")
+            inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size, self.last_reward)
+            self.model.model.train_on_batch(inputs, targets)
 
-        print("final reward {0}".format(self.final_reward))
-        print("saving dump")
-        self.model.model.save_weights(self.model_dump_file_name, overwrite=True)
-        self.model.clear_session()
-        print("end")
+            self.model.model.save_weights(self.model_dump_file_name, overwrite=True)
+            self.model.clear_session()
+
+        with open(self.result_file_name, 'a+') as res:
+            print('Steps {0}'.format(self.step_id + 1))
+            res.write('{0}\n'.format(self.step_id + 1))
+
+        # print("end")
 
     def getName(self):
         return self.__name
