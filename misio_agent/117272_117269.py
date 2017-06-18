@@ -1,11 +1,11 @@
 from array import array
 import numpy as np
 import math
+import json
 import os
 
 from pytools import flatten
 from Model import Model
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 class Agent:
@@ -39,7 +39,6 @@ class Agent:
         self.model = Model(0.7, self.neural_action_count, self.states_count, self.hidden_nodes_count)
 
         self.model_dump_file_name = "model.h12"
-        self.result_file_name = "results.h12"
 
         if os.path.exists(self.model_dump_file_name):
             self.model.model.load_weights(self.model_dump_file_name)
@@ -93,12 +92,12 @@ class Agent:
                 best_id = i
                 break
 
-        # print("choosen action {0}".format(bests_neural_outputs[best_id][0]))
+        #print("choosen action {0}".format(bests_neural_outputs[best_id][0]))
         self.__set_action(bests_neural_outputs[best_id][0])
 
     def get_distance_from_target(self, simple_state):
         dists = []
-        for i in range(len(simple_state) - 4, len(simple_state)):
+        for i in range(len(simple_state)):
             dists.append(
                 math.hypot(self.__terget_point[0] - simple_state[i][0], self.__terget_point[1] - simple_state[i][1]))
         return np.min(dists)
@@ -114,12 +113,8 @@ class Agent:
         return result
 
     def start(self, state):
-        state_list = list(state)
-
-        self.previous_state = self.get_flat_simple_state(state_list)
+        self.previous_state = self.get_flat_simple_state(list(state))
         self.__neural_action(self.previous_state)
-
-        self.last_dist = self.get_distance_from_target(self.get_simple_state(state_list))
 
         return self.__action
 
@@ -189,14 +184,11 @@ class Agent:
             inputs, targets = self.model.exp_replay.get_batch(self.model.model, self.batch_size, self.last_reward)
             self.model.model.train_on_batch(inputs, targets)
 
-            self.model.model.save_weights(self.model_dump_file_name, overwrite=True)
-            self.model.clear_session()
-
-        with open(self.result_file_name, 'a+') as res:
-            print('Steps {0}'.format(self.step_id + 1))
-            res.write('{0}\n'.format(self.step_id + 1))
-
-        # print("end")
+        print("final reward {0}".format(self.final_reward))
+        print("saving dump")
+        self.model.model.save_weights(self.model_dump_file_name, overwrite=True)
+        self.model.clear_session()
+        print("end")
 
     def getName(self):
         return self.__name

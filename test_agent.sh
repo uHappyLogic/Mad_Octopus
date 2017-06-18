@@ -4,14 +4,14 @@ PORT=65399
 PYTHON=python3 # Modify to you needs
 SLEEP_TIME=0.5   # You might have to increase it in case of "unable to connect to port" problems
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
     echo "usage:"
-    echo "  test_agent.sh <TestDir> <AgentName.py>"
+    echo "  test_agent.sh <TestDir> <AgentName.py> external_gui"
     exit 1
 fi
 
 TESTDIR=$1
-
+GUITYPE=$3
 AGENTFILE=$2
 AGENT=`basename ${AGENTFILE%.*}`
 
@@ -24,8 +24,9 @@ cp ./misio_agent/Logger.py agent/python/Logger.py
 cp ./misio_agent/Model.py agent/python/Model.py
 
 # Kill all servers that might have not been closed properly earlier
-kill `ps -x |grep environment/octopus-environment.jar|head -n1 |cut -d " " -f1`
+#kill `ps -x |grep environment/octopus-environment.jar|head -n1 |cut -d " " -f1`
 #kill `ps|grep environment/octopus-environment.jar|cut -d' ' -f1|xargs` 2>/dev/null
+kill `ps -x |grep environment/octopus-environment.jar|head -n1 |awk '{print $1}'`
 sleep 1
 
 # Mean of each line (sum for each value in line)
@@ -41,7 +42,7 @@ do
         printf "%-12s" "$test "
 
         # Run the server
-        java -Djava.endorsed.dirs=environment/lib -jar environment/octopus-environment.jar external_gui $instance $PORT &
+        java -Djava.endorsed.dirs=environment/lib -jar environment/octopus-environment.jar $3 $instance $PORT &
         server_pid=$!
         printf $server_pid
 
@@ -60,7 +61,8 @@ do
         sleep $SLEEP_TIME # Waste of time
         #printf "killing server\n"
         # Kill the server
-        kill $server_pid
+        #kill $server_pid
+        kill `ps -x |grep environment/octopus-environment.jar|head -n1 |awk '{print $1}'`
         sleep $SLEEP_TIME # Waste of time, but I need to wait for OS to reclaim the port
 
         # Move the results to results/agent/*.log and print the sum of rewards
